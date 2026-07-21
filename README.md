@@ -1,4 +1,4 @@
-# lesson.search — Advanced RAG Patterns project
+# Expo.search — Advanced RAG Patterns project
 
 Ask questions about your course and get answers cited to the exact lesson
 and timestamp they came from.
