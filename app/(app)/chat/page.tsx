@@ -230,7 +230,7 @@ export default function ChatPage() {
   };
 
   return (
-    <main className="flex h-screen bg-gradient-to-b from-base to-[#0d1118]">
+    <main className="flex h-screen flex-col bg-gradient-to-b from-base to-[#0d1118] md:flex-row">
       <ConversationSidebar
         activeId={conversationId}
         onSelect={loadConversation}
@@ -238,19 +238,14 @@ export default function ChatPage() {
         refreshKey={refreshKey}
       />
 
-      <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-border bg-surface/60 px-6 py-3 backdrop-blur">
-          <span className="font-display text-sm font-bold text-primary">
-            lesson<span className="text-accent">.</span>search
-          </span>
-
-          <div className="flex items-center gap-2">
-            <div className="relative">
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <header className="flex items-center justify-between border-b border-border bg-surface/60 px-3 py-3 backdrop-blur sm:px-6">
+          <div className="relative min-w-0">
               <Filter size={12} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-muted" />
               <select
                 value={moduleFilter}
                 onChange={(e) => setModuleFilter(e.target.value)}
-                className="appearance-none rounded-lg border border-border bg-surface2 py-1.5 pl-6 pr-6 text-xs text-primary focus:border-accent/40 focus:outline-none"
+                className="w-30 appearance-none rounded-lg border border-border bg-surface2 py-1.5 pl-6 pr-6 text-xs text-primary focus:border-accent/40 focus:outline-none "
               >
                 <option value="">All modules</option>
                 {modules.map((m) => (
@@ -261,12 +256,15 @@ export default function ChatPage() {
               </select>
             </div>
 
+          <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+            
+
             <button
               onClick={exportMarkdown}
               disabled={messages.length === 0}
               aria-label="Export conversation as Markdown"
               title="Export as Markdown"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-surface2 hover:text-primary disabled:opacity-30"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-surface2 hover:text-primary disabled:opacity-30"
             >
               <Download size={15} />
             </button>
@@ -275,14 +273,14 @@ export default function ChatPage() {
               disabled={!conversationId}
               aria-label="Copy shareable link"
               title="Copy shareable link"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-surface2 hover:text-primary disabled:opacity-30"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-surface2 hover:text-primary disabled:opacity-30"
             >
               {shareState === "copied" ? <Check size={15} className="text-emerald-400" /> : <Share2 size={15} />}
             </button>
             <a
               href="/admin"
               title="Ingestion dashboard"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-surface2 hover:text-primary"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-surface2 hover:text-primary"
             >
               <LayoutDashboard size={15} />
             </a>

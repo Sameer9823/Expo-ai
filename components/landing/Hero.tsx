@@ -86,7 +86,7 @@ export function Hero() {
       <div className="mx-auto mt-10 max-w-2xl sm:mt-16">
         <div className="rounded-2xl border border-border bg-surface p-4 sm:p-6 md:p-8">
           <div className="flex items-center justify-between font-mono text-[11px] text-muted sm:text-xs">
-            <span className="truncate">lesson-search.mp4</span>
+            <span className="truncate">Expo-search.mp4</span>
             <span className="shrink-0">{cue.timestamp}</span>
           </div>
 

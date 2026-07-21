@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
+import { Space_Grotesk, Inter, JetBrains_Mono, Geist } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
 import "./globals.css";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const display = Space_Grotesk({
   subsets: ["latin"],
@@ -49,7 +52,7 @@ export default function RootLayout({
         },
       }}
     >
-      <html lang="en" className="dark">
+      <html lang="en" className={cn("dark", "font-sans", geist.variable)}>
         <body
           className={`${display.variable} ${body.variable} ${mono.variable} font-sans bg-base text-primary antialiased`}
         >
