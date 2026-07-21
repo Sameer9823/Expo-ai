@@ -1,0 +1,5 @@
+{
+  "_readme": "Map each lesson to a video or audio URL so citations can seek directly to the timestamp. Key format is \"<module>::<lesson>\" using the SAME cleaned names the ingest script produces (see scripts/ingest.ts's cleanLessonName). Run `npm run ingest -- --list-lessons` or check a source card's tooltip in the UI to find exact keys. Values can be direct .mp4/.webm/.m4a URLs, or a YouTube/Vimeo embed URL — the player component auto-detects which.",
+  "module 2::native components vs core components": "https://example.com/videos/module-2-native-components.mp4",
+  "module 8::Getting Started with Expo Camera - Setup, Permissions & First Capture": "https://www.youtube.com/watch?v=REPLACE_ME"
+}
