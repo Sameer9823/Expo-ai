@@ -293,7 +293,7 @@ export default function ChatPage() {
           <div className="mx-auto flex max-w-2xl flex-col gap-4">
             {messages.length === 0 && (
               <div className="mt-20 text-center">
-                <p className="font-display text-lg text-primary">Ask anything about the course</p>
+                <p className="font-display text-lg text-primary">Ask anything about the Expo and React Native Course</p>
                 <p className="mt-2 text-sm text-muted">
                   Answers cite the exact lesson and timestamp they came from — click a source to jump right to it.
                 </p>

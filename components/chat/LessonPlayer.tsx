@@ -62,8 +62,7 @@ export function LessonPlayer({
           <div className="flex h-40 flex-col items-center justify-center gap-2 px-4 text-center">
             <PlayCircle size={22} className="text-muted" />
             <p className="text-xs text-muted">
-              No video source configured for this lesson yet. Add an entry to{" "}
-              <code className="text-cite">data/media-map.json</code> to enable playback at{" "}
+              No video source configured for this lesson yet.
               <span className="font-mono text-primary">{source.timestamp}</span>.
             </p>
           </div>
