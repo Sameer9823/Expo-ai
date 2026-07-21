@@ -29,7 +29,7 @@ export function Footer() {
         <span>Expo.search</span>
          <a
         
-          href="https://github.com/your-username/your-repo"
+          href="https://github.com/Sameer9823/Expo-ai"
           target="_blank"
           rel="noopener noreferrer"
           className="hover:text-primary hover:underline"

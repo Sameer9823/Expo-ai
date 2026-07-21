@@ -84,6 +84,12 @@ export async function searchIndex(
   topK: number,
   moduleFilter?: string
 ): Promise<ScoredChunk[]> {
+  // Previously only insertChunks() called this, so a collection created
+  // before the "module" payload index existed (or a first search racing
+  // ahead of any ingest) would 400 on a filtered search. Cheap idempotent
+  // check, so it's safe to call on every search.
+  await ensureCollection();
+
   const results = await qdrant.search(COLLECTION_NAME, {
     vector: queryEmbedding,
     limit: topK,
