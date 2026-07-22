@@ -11,6 +11,12 @@ body {
   color: #e7e9ee;
 }
 
+/* faint dot-grid texture, used only behind the landing hero's terminal panel */
+.terminal-grid {
+  background-image: radial-gradient(circle, #ffffff12 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
 ::selection {
   background: #ff6a3d;
   color: #0a0d12;

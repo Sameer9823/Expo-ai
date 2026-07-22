@@ -27,6 +27,27 @@ function toSources(chunks: ScoredChunk[]): Source[] {
   }));
 }
 
+const GREETING_PATTERN =
+  /^(hi|hey|hello|yo|sup|hola|good\s?morning|good\s?afternoon|good\s?evening)[\s!.,]*$/i;
+
+const GREETING_ANSWER =
+  "Welcome to the Expo course assistant! Ask me anything about the course — " +
+  "React Native basics, Expo setup, navigation, APIs, deployment, or any other " +
+  "topic covered in the lessons — and I'll answer using the actual course transcripts.";
+
+/** True only for short greeting-only messages ("hi", "hello", "yo") with nothing else in them. */
+export function isGreeting(query: string): boolean {
+  return GREETING_PATTERN.test(query.trim());
+}
+
+/** Canned welcome reply for greetings, streamed the same way a real answer would be so the UI behaves identically. */
+export async function generateGreetingAnswer(
+  onToken: (token: string) => void
+): Promise<{ answer: string; sources: Source[] }> {
+  for (const char of GREETING_ANSWER) onToken(char);
+  return { answer: GREETING_ANSWER, sources: [] };
+}
+
 const SYSTEM_PROMPT =
   "You answer questions about a mobile development course using ONLY the " +
   "transcript excerpts provided below. Each excerpt is numbered and tagged " +
@@ -34,6 +55,13 @@ const SYSTEM_PROMPT =
   "excerpt, cite it inline like [1] or [2]. If the excerpts don't contain the " +
   "answer, say so plainly instead of guessing — never invent lesson names or " +
   "timestamps that aren't in the provided excerpts.";
+
+/** Streams the final answer token-by-token, calling onToken as it generates. */
+/** Extracts which excerpt numbers (e.g. [1], [2]) were actually cited in the answer. */
+function citedIndices(answer: string): Set<number> {
+  const matches = answer.matchAll(/\[(\d+)\]/g);
+  return new Set([...matches].map((m) => parseInt(m[1], 10)));
+}
 
 /** Streams the final answer token-by-token, calling onToken as it generates. */
 export async function generateAnswerStreaming(
@@ -44,7 +72,16 @@ export async function generateAnswerStreaming(
   const context = buildContext(chunks);
   const userPrompt = `Course excerpts:\n\n${context}\n\nQuestion: ${query}`;
   const answer = await chatStream(SYSTEM_PROMPT, userPrompt, onToken);
-  return { answer, sources: toSources(chunks) };
+
+  // Only surface source cards for excerpts the model actually cited. If the
+  // model said "the excerpts don't contain the answer," it won't have cited
+  // anything, so no timestamps should show up alongside that response.
+  const cited = citedIndices(answer);
+  const usedChunks = cited.size
+    ? chunks.filter((_, i) => cited.has(i + 1))
+    : [];
+
+  return { answer, sources: toSources(usedChunks) };
 }
 
 /** Non-streaming variant, used internally by the corrective loop to score drafts. */

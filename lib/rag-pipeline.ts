@@ -1,7 +1,7 @@
 import { inputGuardrails, outputGuardrails } from "./guardrails";
 import { translateQuery, contextualizeQuery, ChatTurn } from "./query-translation";
 import { retrieveMulti, rerankAndDedupe, retrieveSingle } from "./retrieval";
-import { generateAnswerStreaming, scoreAnswer, generateFollowups, Source } from "./generate";
+import { generateAnswerStreaming, generateGreetingAnswer, isGreeting, scoreAnswer, generateFollowups, Source } from "./generate";
 
 const FINAL_TOP_K = 5;
 const SCORE_THRESHOLD = 6;
@@ -42,6 +42,24 @@ export async function runRagPipeline(
   options: PipelineOptions = {}
 ): Promise<void> {
   const { history = [], moduleFilter } = options;
+   if (isGreeting(query)) {
+    emit({ type: "status", step: "Saying hello" });
+    const { answer, sources } = await generateGreetingAnswer((token) =>
+      emit({ type: "token", value: token })
+    );
+    emit({ type: "sources", sources, final: true });
+    emit({ type: "confidence", score: 10 });
+    emit({
+      type: "followups",
+      questions: [
+        "What is Expo and how is it different from React Native CLI?",
+        "How do I set up my first Expo project?",
+        "What topics does this course cover?",
+      ],
+    });
+    emit({ type: "done" });
+    return;
+  }
 
   emit({ type: "status", step: "Checking your question" });
   const inputCheck = await inputGuardrails(query);

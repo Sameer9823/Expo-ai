@@ -16,6 +16,11 @@ const config: Config = {
         accent: "#FF6A3D",
         accentMuted: "#7A3A26",
         cite: "#38BDF8",
+        // Additive tokens for the landing page's terminal/live-query motif.
+        // Kept separate from `accent`/`cite` above so the chat UI (which
+        // already relies on those) is unaffected.
+        termAmber: "#F0B429",
+        termGreen: "#7EE787",
       },
       fontFamily: {
         display: ["var(--font-display)", "sans-serif"],
@@ -31,9 +36,14 @@ const config: Config = {
           "0%": { opacity: "0", transform: "translateY(8px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        blink: {
+          "0%, 49%": { opacity: "1" },
+          "50%, 100%": { opacity: "0" },
+        },
       },
       animation: {
         fadeUp: "fadeUp 0.5s ease-out forwards",
+        blink: "blink 1s step-end infinite",
       },
       typography: {
         invert: {
