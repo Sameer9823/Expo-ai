@@ -9,11 +9,14 @@ generation (RAG) pipeline — with query rewriting, multi-query retrieval,
 reranking, grounded citation generation, and a self-correcting quality
 loop — all streamed live to a chat UI.
 
+**Live demo:** [expo-ai-ten.vercel.app](https://expo-ai-ten.vercel.app)
+
 ---
 
 ## Table of contents
 
 - [Features](#features)
+- [Landing page](#landing-page)
 - [Tech stack](#tech-stack)
 - [Project structure](#project-structure)
 - [Getting started](#getting-started)
@@ -28,6 +31,7 @@ loop — all streamed live to a chat UI.
 ## Features
 
 **Chat / UX**
+
 - **Click-to-jump timestamps** — every source card is clickable and opens a
   floating lesson player seeked to that exact moment. No video/audio files
   ship in this repo (only subtitles) — fill in `data/media-map.json`
@@ -47,6 +51,7 @@ loop — all streamed live to a chat UI.
   a pause in speech.
 
 **Retrieval quality**
+
 - **Feedback (👍/👎)** — stored per message in Postgres (`Message.feedback`)
   for future eval/reranking work.
 - **Confidence badge** — the corrective loop's 0–10 grounding score is
@@ -56,6 +61,7 @@ loop — all streamed live to a chat UI.
   dropdown, which passes a Qdrant payload filter down through retrieval.
 
 **Product / account**
+
 - **Conversation search** — full-text search box in the sidebar
   (`GET /api/conversations?q=...`).
 - **Shareable links** — turn a conversation into a public, read-only
@@ -69,19 +75,40 @@ loop — all streamed live to a chat UI.
 - **Auth** — Clerk-gated sign-in/sign-up; `middleware.ts` protects `/chat`
   and `/api/chat`.
 
+## Landing page
+
+`components/landing/` holds the marketing site (`Nav`, `Hero`, `Features`,
+`HowItWorks`, `ProductOverview`, `CTA`) — a dark, terminal-inspired design
+that mirrors the product itself rather than a generic SaaS template:
+
+- **Live pipeline demo in the hero** — a self-looping terminal panel types
+  out real example questions and animates the actual RAG stage names
+  (query rewrite → retrieval → generation) through pending → running →
+  done, then reveals the answer and its cited source, before moving to the
+  next example.
+- **Animated chat demo** (`ProductOverview`) — a second, more detailed
+  walkthrough simulating a full chat turn: typed question, "thinking"
+  state, streamed answer with inline code, and source cards appearing in
+  sequence.
+- **Motion and gradient accents** — scroll-triggered reveals, hover glows,
+  and gradient treatments (`accent` → `termAmber` → `cite`) built with
+  Framer Motion and Tailwind, layered over an ambient dot-grid background.
+- Fully responsive, with all animation driven by component state rather
+  than video/GIF assets.
+
 ## Tech stack
 
-| Layer            | Technology                                              |
-|-------------------|----------------------------------------------------------|
-| Framework         | Next.js 15 (App Router), React 18, TypeScript             |
-| Styling           | Tailwind CSS, `class-variance-authority`, `tailwind-merge` |
-| Auth              | Clerk                                                     |
-| Database          | Postgres (Neon serverless) via Prisma ORM                 |
-| Vector store       | Qdrant                                                    |
-| LLM / embeddings   | OpenAI API                                                |
-| Validation         | Zod                                                       |
-| Motion / icons     | Framer Motion, Lucide React                               |
-| Markdown rendering | `react-markdown` + `remark-gfm`                            |
+| Layer              | Technology                                                 |
+| ------------------ | ----------------------------------------------------------- |
+| Framework          | Next.js 15 (App Router), React 18, TypeScript              |
+| Styling            | Tailwind CSS, `class-variance-authority`, `tailwind-merge`  |
+| Auth               | Clerk                                                       |
+| Database           | Postgres (Neon serverless) via Prisma ORM                   |
+| Vector store       | Qdrant                                                      |
+| LLM / embeddings   | OpenAI API                                                  |
+| Validation         | Zod                                                          |
+| Motion / icons     | Framer Motion, Lucide React                                 |
+| Markdown rendering | `react-markdown` + `remark-gfm`                              |
 
 ## Project structure
 
@@ -148,28 +175,37 @@ data/
 ### Setup
 
 1. Install dependencies:
+
    ```
    npm install
    ```
+
 2. Copy `.env.example` to `.env.local` and fill in the values described in
    [Environment variables](#environment-variables) below.
 3. Apply database migrations:
+
    ```
    npx prisma migrate dev
    ```
+
 4. Build the vector index (one-time, re-run whenever subtitles change):
+
    ```
    npm run ingest
    ```
+
    This reads every lesson under `data/subtitles/`, chunks the transcripts
    into ~40s windows, embeds them, and upserts them into your Qdrant
    collection. The repo already includes real course subtitles under
    `data/subtitles/` (17 modules of an Expo/React Native course), so you can
    ingest and query immediately without supplying your own transcripts.
+
 5. Start the dev server:
+
    ```
    npm run dev
    ```
+
    Visit `http://localhost:3000`, sign up, and go to `/chat`.
 
 ### Optional: enable video playback
@@ -190,8 +226,8 @@ globally instead of per-instance:
 
 1. Create a free Redis database at [console.upstash.com](https://console.upstash.com).
 2. Copy the REST URL and REST token from the database's "REST API" tab.
-3. Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` in `.env.local`
-   (or your hosting provider's environment settings).
+3. Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` in
+   `.env.local` (or your hosting provider's environment settings).
 
 `lib/rate-limit.ts` detects these automatically — no code changes needed.
 To change the limit itself, edit `MAX_REQUESTS_PER_WINDOW` / `WINDOW` at
@@ -205,34 +241,34 @@ deploying with real users to restrict this.
 
 ## Environment variables
 
-| Variable | Description |
-|---|---|
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key |
-| `CLERK_SECRET_KEY` | Clerk secret key |
-| `NEXT_PUBLIC_CLERK_SIGN_IN_URL` | Defaults to `/sign-in` |
-| `NEXT_PUBLIC_CLERK_SIGN_UP_URL` | Defaults to `/sign-up` |
-| `NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL` | Defaults to `/chat` |
-| `NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL` | Defaults to `/chat` |
-| `OPENAI_API_KEY` | Used for embeddings and chat generation |
-| `DATABASE_URL` | Postgres connection string (Neon serverless recommended) |
-| `QDRANT_URL` | Qdrant cluster URL |
-| `QDRANT_API_KEY` | Qdrant API key (optional for local/self-hosted Qdrant) |
-| `ADMIN_USER_IDS` | Comma-separated Clerk user IDs allowed to trigger re-ingestion from `/admin`. Leave unset to allow any signed-in user (fine for solo/dev use). |
-| `UPSTASH_REDIS_REST_URL` | Optional. Upstash Redis REST URL, used for global `/api/chat` rate limiting. Falls back to an in-memory limiter if unset (fine for local dev only). |
-| `UPSTASH_REDIS_REST_TOKEN` | Optional. Upstash Redis REST token, paired with the URL above. |
+| Variable                              | Description                                                                                                                                          |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`    | Clerk publishable key                                                                                                                                 |
+| `CLERK_SECRET_KEY`                     | Clerk secret key                                                                                                                                       |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_URL`        | Defaults to `/sign-in`                                                                                                                                 |
+| `NEXT_PUBLIC_CLERK_SIGN_UP_URL`        | Defaults to `/sign-up`                                                                                                                                 |
+| `NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL`  | Defaults to `/chat`                                                                                                                                    |
+| `NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL`  | Defaults to `/chat`                                                                                                                                    |
+| `OPENAI_API_KEY`                       | Used for embeddings and chat generation                                                                                                                |
+| `DATABASE_URL`                         | Postgres connection string (Neon serverless recommended)                                                                                               |
+| `QDRANT_URL`                           | Qdrant cluster URL                                                                                                                                      |
+| `QDRANT_API_KEY`                       | Qdrant API key (optional for local/self-hosted Qdrant)                                                                                                 |
+| `ADMIN_USER_IDS`                       | Comma-separated Clerk user IDs allowed to trigger re-ingestion from `/admin`. Leave unset to allow any signed-in user (fine for solo/dev use).         |
+| `UPSTASH_REDIS_REST_URL`               | Optional. Upstash Redis REST URL, used for global `/api/chat` rate limiting. Falls back to an in-memory limiter if unset (fine for local dev only).    |
+| `UPSTASH_REDIS_REST_TOKEN`             | Optional. Upstash Redis REST token, paired with the URL above.                                                                                         |
 
 See `.env.example` for a ready-to-copy template.
 
 ## Scripts
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Start the Next.js dev server |
-| `npm run build` | Production build |
-| `npm run start` | Start the production server |
-| `npm run lint` | Run Next.js/ESLint checks |
-| `npm run ingest` | Parse, chunk, embed, and upsert all course subtitles into Qdrant |
-| `npx prisma migrate dev` | Apply/create database migrations |
+| Command                    | Description                                                        |
+| --------------------------- | -------------------------------------------------------------------- |
+| `npm run dev`               | Start the Next.js dev server                                        |
+| `npm run build`             | Production build                                                    |
+| `npm run start`             | Start the production server                                         |
+| `npm run lint`              | Run Next.js/ESLint checks                                           |
+| `npm run ingest`            | Parse, chunk, embed, and upsert all course subtitles into Qdrant    |
+| `npx prisma migrate dev`    | Apply/create database migrations                                    |
 
 ## Architecture
 
@@ -292,9 +328,9 @@ video/audio URL for the in-app lesson player.
 - `lib/rate-limit.ts` uses [Upstash Redis](https://upstash.com) for a true
   global, per-user sliding-window limit (12 requests/minute by default)
   shared across every serverless instance, when `UPSTASH_REDIS_REST_URL`
-  and `UPSTASH_REDIS_REST_TOKEN` are set. If they're unset, it falls back to
-  an in-memory limiter — fine for local dev, but per-process, so it won't
-  coordinate limits across multiple instances in production.
+  and `UPSTASH_REDIS_REST_TOKEN` are set. If they're unset, it falls back
+  to an in-memory limiter — fine for local dev, but per-process, so it
+  won't coordinate limits across multiple instances in production.
 - There is currently no automated test suite or CI configuration.
 - Output guardrails currently check for leaked internal instructions but do
   not independently verify that generated answers are grounded in the
