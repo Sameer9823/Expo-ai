@@ -101,7 +101,7 @@ export function ChatInput({
 
   return (
     <div className="flex items-end gap-1.5 rounded-2xl border border-border bg-surface p-1.5 shadow-lg shadow-black/20 focus-within:border-accent/40 sm:gap-2 sm:p-2">
-      {micSupported && (
+      {/* {micSupported && (
         <button
           onClick={toggleMic}
           aria-label={listening ? "Stop recording" : "Start voice input"}
@@ -111,7 +111,7 @@ export function ChatInput({
         >
           {listening ? <Square size={15} /> : <Mic size={16} />}
         </button>
-      )}
+      )} */}
       <textarea
         value={value}
         onChange={(e) => {
