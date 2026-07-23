@@ -1,10 +1,21 @@
 import { inputGuardrails, outputGuardrails } from "./guardrails";
 import { translateQuery, contextualizeQuery, ChatTurn } from "./query-translation";
 import { retrieveMulti, rerankAndDedupe, retrieveSingle } from "./retrieval";
-import { generateAnswerStreaming, generateGreetingAnswer, isGreeting, scoreAnswer, generateFollowups, Source } from "./generate";
+import {
+  generateAnswerStreaming,
+  generateGreetingAnswer,
+  isGreeting,
+  scoreAnswer,
+  generateFollowups,
+  buildOutOfCourseAnswer,
+  Source,
+} from "./generate";
 
 const FINAL_TOP_K = 5;
 const SCORE_THRESHOLD = 6;
+// Below this, even the best attempt isn't actually answering the question —
+// treat it as "not covered by this course" rather than a low-quality answer.
+const OUT_OF_COURSE_THRESHOLD = 3;
 const MAX_RETRIES = 3;
 
 export type PipelineEvent =
@@ -23,12 +34,15 @@ export type PipelineOptions = {
   moduleFilter?: string;
 };
 
-function toSourceEvent(chunks: { module: string; lesson: string; timestamp: string; startTime: number }[]) {
+function toSourceEvent(
+  chunks: { module: string; lesson: string; timestamp: string; startTime: number; text?: string }[]
+) {
   return chunks.map((c) => ({
     module: c.module,
     lesson: c.lesson,
     timestamp: c.timestamp,
     startTime: c.startTime,
+    text: c.text,
   }));
 }
 
@@ -99,15 +113,10 @@ export async function runRagPipeline(
 
     const isLastAttempt = attempt === MAX_RETRIES;
 
-    const { answer, sources } = await generateAnswerStreaming(
-      currentQuery,
-      topChunks,
-      (token) => {
-        // Only stream tokens live on the final attempt so the user doesn't
-        // see a low-quality draft that's about to be discarded and retried.
-        if (isLastAttempt) emit({ type: "token", value: token });
-      }
-    );
+    // Tokens are withheld and replayed after scoring on every attempt now —
+    // not just retries — so an out-of-course draft never gets half-streamed
+    // to the user before we know to swap in the fallback below.
+    const { answer, sources } = await generateAnswerStreaming(currentQuery, topChunks, () => {});
 
     const outputCheck = await outputGuardrails(answer);
     if (!outputCheck.allowed) {
@@ -117,18 +126,19 @@ export async function runRagPipeline(
 
     const { score, keywords } = await scoreAnswer(currentQuery, answer);
 
-    if (isLastAttempt) {
-      finalAnswer = answer;
-      finalSources = sources;
-      finalScore = score;
-      break;
-    }
-
-    if (score >= SCORE_THRESHOLD) {
-      // Good enough — stream it now since we withheld tokens above.
-      for (const char of answer) emit({ type: "token", value: char });
-      finalAnswer = answer;
-      finalSources = sources;
+    if (isLastAttempt || score >= SCORE_THRESHOLD) {
+      if (score < OUT_OF_COURSE_THRESHOLD) {
+        // HyDE and the other query variants still retrieve the *closest*
+        // chunks even when nothing in the course actually covers the
+        // question — show that excerpt instead of a bare "I don't know".
+        const nearest = topChunks[0];
+        finalAnswer = buildOutOfCourseAnswer(nearest);
+        finalSources = nearest ? toSourceEvent([nearest]) : [];
+      } else {
+        finalAnswer = answer;
+        finalSources = sources;
+      }
+      for (const char of finalAnswer) emit({ type: "token", value: char });
       finalScore = score;
       break;
     }

@@ -74,9 +74,26 @@ export async function POST(req: NextRequest) {
   let confidence: number | undefined;
   let wasBlocked = false;
   let blockedReason = "";
+  // Set when the client disconnects (tab closed, navigated away, fetch
+  // reader cancelled) mid-stream. Once true, we stop trying to write to
+  // the controller — writing to an already-closed/errored controller
+  // throws, and an uncaught throw here is what turns into Next's
+  // "failed to pipe response" 500.
+  let clientDisconnected = false;
 
   const stream = new ReadableStream({
     async start(controller) {
+      const safeEnqueue = (chunk: Uint8Array) => {
+        if (clientDisconnected) return;
+        try {
+          controller.enqueue(chunk);
+        } catch {
+          // Client disconnected between our check above and this call —
+          // nothing more to send, just stop trying.
+          clientDisconnected = true;
+        }
+      };
+
       const send = (event: PipelineEvent) => {
         if (event.type === "token") fullAnswer += event.value;
         if (event.type === "sources" && event.final) finalSources = event.sources;
@@ -86,7 +103,7 @@ export async function POST(req: NextRequest) {
           wasBlocked = true;
           blockedReason = event.reason;
         }
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+        safeEnqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
       };
 
       try {
@@ -96,6 +113,9 @@ export async function POST(req: NextRequest) {
         blockedReason = err instanceof Error ? err.message : "Something went wrong.";
         send({ type: "blocked", reason: blockedReason });
       } finally {
+        // Persist the turn regardless of whether the client is still
+        // listening — a disconnected client shouldn't lose the answer,
+        // it'll just see it next time the conversation loads.
         const saved = await prisma.message.create({
           data: {
             conversationId,
@@ -107,15 +127,29 @@ export async function POST(req: NextRequest) {
             blocked: wasBlocked,
           },
         });
-        controller.enqueue(
+        safeEnqueue(
           encoder.encode(`data: ${JSON.stringify({ type: "assistantMessageId", id: saved.id })}\n\n`)
         );
         await prisma.conversation.update({
           where: { id: conversationId },
           data: { updatedAt: new Date() },
         });
-        controller.close();
+        if (!clientDisconnected) {
+          try {
+            controller.close();
+          } catch {
+            // Disconnected in the gap between the check and this call —
+            // nothing to close.
+          }
+        }
       }
+    },
+    cancel() {
+      // Called by the runtime when the client disconnects (e.g. navigates
+      // to a different conversation while this one is still streaming).
+      // Just flip the flag — the try/catches above already handle any
+      // writes still in flight.
+      clientDisconnected = true;
     },
   });
 

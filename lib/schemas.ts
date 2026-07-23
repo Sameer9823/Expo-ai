@@ -44,6 +44,7 @@ export const SourceItemSchema = z.object({
   lesson: z.string(),
   timestamp: z.string(),
   startTime: z.number().optional(), // seconds, used to seek the lesson player
+  text: z.string().optional(), // transcript chunk, shown when the time badge is expanded
 });
 
 export const SaveMessageSchema = z.object({

@@ -7,6 +7,7 @@ export type Source = {
   lesson: string;
   timestamp: string;
   startTime?: number;
+  text?: string; // transcript chunk this source was drawn from
 };
 
 function buildContext(chunks: ScoredChunk[]): string {
@@ -18,12 +19,43 @@ function buildContext(chunks: ScoredChunk[]): string {
     .join("\n\n");
 }
 
+/** Grabs the first few sentences of a chunk's transcript, used as a preview excerpt. */
+function excerptFrom(text: string, maxSentences = 3): string {
+  const sentences = text.match(/[^.!?]+[.!?]+(\s|$)/g) ?? [text];
+  return sentences.slice(0, maxSentences).join("").trim();
+}
+
+/**
+ * Fallback used when the corrective loop runs out of retries and the best
+ * answer still isn't grounded in the course. HyDE (and the other query
+ * variants) still retrieve the *closest* chunks even when nothing actually
+ * covers the question, so instead of a bare "I don't know" we show that
+ * closest excerpt and steer the student toward what the course does cover.
+ */
+export function buildOutOfCourseAnswer(nearest: ScoredChunk | undefined): string {
+  if (!nearest) {
+    return (
+      "That doesn't look like something this course covers, and I couldn't find " +
+      "anything closely related in the transcripts either. Try asking about React " +
+      "Native basics, Expo setup, navigation, or deployment instead."
+    );
+  }
+  const excerpt = excerptFrom(nearest.text);
+  return (
+    `That doesn't look like it's covered in this course. The closest related material I found is from ` +
+    `**${nearest.lesson}** (${nearest.module} · ${nearest.timestamp}):\n\n` +
+    `> ${excerpt}\n\n` +
+    `That's not quite what you asked though — want to ask about **${nearest.lesson}** instead, or something else from the course?`
+  );
+}
+
 function toSources(chunks: ScoredChunk[]): Source[] {
   return chunks.map((c) => ({
     module: c.module,
     lesson: c.lesson,
     timestamp: c.timestamp,
     startTime: c.startTime,
+    text: c.text,
   }));
 }
 
